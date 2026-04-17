@@ -11,31 +11,21 @@ const app = express();
 // ====================== MIDDLEWARE ======================
 app.use(helmet());
 
-// Improved CORS configuration
-const corsOptions = {
-  origin: [
-    'https://travel-2k1siw8cd-mainadion50-7869s-projects.vercel.app', // your current Vercel URL
-    'https://travel-app-chi-eosin.vercel.app',                       // previous one (keep both)
-    'http://localhost:5173'
-  ],
+const allowedOrigins = [
+  'https://travel-2k1siw8cd-mainadion50-7869s-projects.vercel.app', // current one from your screenshot
+  'https://travel-app-chi-eosin.vercel.app',                       // previous one
+  'http://localhost:5173'
+];
+
+app.use(cors({
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200   // important for some older browsers / preflight
-};
+  optionsSuccessStatus: 200
+}));
 
-app.use(cors(corsOptions));
-
-// Explicitly handle preflight for all routes
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(204).end();
-});
-
-// Body parsers - IMPORTANT: after cors
+// Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,7 +38,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ success: true, message: '✅ TravelGroup Backend is running!' });
+  res.json({ success: true, message: '✅ TravelGroup Backend is running successfully!' });
 });
 
 // 404 Handler
@@ -73,7 +63,7 @@ const startServer = async () => {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌐 Allowed origins: Vercel + localhost`);
+      console.log(`🌐 Allowed origins:`, allowedOrigins);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
