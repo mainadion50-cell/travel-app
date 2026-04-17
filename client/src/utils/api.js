@@ -1,35 +1,55 @@
-import axios from 'axios'
+import axios from 'axios';
 
 const api = axios.create({
   baseURL: 'https://travel-server-n663.onrender.com/api',
   headers: { 'Content-Type': 'application/json' },
-})
+});
 
-// Attach token to every request if available
-// Uses adminToken for /admin/* routes, tg_token for everything else
+// Request Interceptor - Attach correct token
 api.interceptors.request.use((config) => {
-  const isAdminRoute = config.url?.startsWith('/admin')
-  const token = isAdminRoute
-    ? localStorage.getItem('adminToken')
-    : localStorage.getItem('tg_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
+  const url = config.url || '';
 
-// Handle 401 globally
+  // Admin routes use adminToken
+  if (url.startsWith('/admin') || url.includes('/admin/')) {
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      config.headers.Authorization = `Bearer ${adminToken}`;
+    }
+  } 
+  // Regular routes use tg_token
+  else {
+    const tgToken = localStorage.getItem('tg_token');
+    if (tgToken) {
+      config.headers.Authorization = `Bearer ${tgToken}`;
+    }
+  }
+
+  return config;
+});
+
+// Response Interceptor - Improved to prevent unwanted redirects on admin routes
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const url = error.config?.url || ''
-    const isAdminRoute = url.startsWith('/admin')
-    const isAuthRoute = url.startsWith('/auth')
-    if (error.response?.status === 401 && !isAdminRoute && !isAuthRoute) {
-      localStorage.removeItem('tg_user')
-      localStorage.removeItem('tg_token')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
+    const url = error.config?.url || '';
+    const isAdminRoute = url.startsWith('/admin') || url.includes('/admin/');
+    const isAuthRoute = url.startsWith('/auth');
 
-export default api
+    // Only auto-redirect to login for regular user routes on 401
+    // Do NOT redirect for admin routes or auth routes
+    if (error.response?.status === 401) {
+      if (!isAdminRoute && !isAuthRoute) {
+        // Regular user session expired
+        localStorage.removeItem('tg_user');
+        localStorage.removeItem('tg_token');
+        window.location.href = '/login';
+      }
+      // For admin routes: do nothing here (let Admin.jsx handle the error)
+      // For auth routes: let the login/register component handle the error
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default api;
