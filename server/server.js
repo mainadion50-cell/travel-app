@@ -11,18 +11,31 @@ const app = express();
 // ====================== MIDDLEWARE ======================
 app.use(helmet());
 
-// Updated CORS configuration
-app.use(cors({
+// Improved CORS configuration
+const corsOptions = {
   origin: [
-    'https://travel-app-chi-eosin.vercel.app',   // Your Vercel frontend
-    'http://localhost:5173'                      // Local development
+    'https://travel-2k1siw8cd-mainadion50-7869s-projects.vercel.app', // your current Vercel URL
+    'https://travel-app-chi-eosin.vercel.app',                       // previous one (keep both)
+    'http://localhost:5173'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+  optionsSuccessStatus: 200   // important for some older browsers / preflight
+};
 
-// Body parsers
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight for all routes
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(204).end();
+});
+
+// Body parsers - IMPORTANT: after cors
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -35,10 +48,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: '✅ TravelGroup Backend is running successfully!',
-  });
+  res.json({ success: true, message: '✅ TravelGroup Backend is running!' });
 });
 
 // 404 Handler
@@ -51,9 +61,7 @@ app.use((err, req, res, next) => {
   console.error('Server Error:', err.message);
   res.status(500).json({
     success: false,
-    message: process.env.NODE_ENV === 'development' 
-      ? err.message 
-      : 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error'
   });
 });
 
@@ -65,7 +73,7 @@ const startServer = async () => {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌐 Allowed frontend: https://travel-app-chi-eosin.vercel.app`);
+      console.log(`🌐 Allowed origins: Vercel + localhost`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
