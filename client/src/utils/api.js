@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'https://travel-server-n663.onrender.com/api',
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -12,25 +12,22 @@ api.interceptors.request.use((config) => {
   const token = isAdminRoute
     ? localStorage.getItem('adminToken')
     : localStorage.getItem('tg_token')
-
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Handle 401 globally - but only redirect if it's NOT an admin or auth route
+// Handle 401 globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const url = error.config?.url || ''
     const isAdminRoute = url.startsWith('/admin')
     const isAuthRoute = url.startsWith('/auth')
-
     if (error.response?.status === 401 && !isAdminRoute && !isAuthRoute) {
       localStorage.removeItem('tg_user')
       localStorage.removeItem('tg_token')
       window.location.href = '/login'
     }
-
     return Promise.reject(error)
   }
 )
