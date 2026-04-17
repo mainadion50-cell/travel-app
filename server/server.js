@@ -11,22 +11,30 @@ const app = express();
 // ====================== MIDDLEWARE ======================
 app.use(helmet());
 
+// Updated CORS - allows both Vercel frontend and local development
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: [
+    'https://travel-app-chi-eosin.vercel.app',   // Your current Vercel URL
+    'http://localhost:5173'                      // Local development
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors());
+
+// Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ====================== ROUTES ======================
-app.use('/api/auth',     require('./routes/authRoutes'));
-app.use('/api/trips',    require('./routes/tripRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/trips', require('./routes/tripRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
-app.use('/api/admin',    require('./routes/adminRoutes'));   // ← ADDED
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Health check
 app.get('/', (req, res) => {
@@ -46,7 +54,9 @@ app.use((err, req, res, next) => {
   console.error('Server Error:', err.message);
   res.status(500).json({
     success: false,
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' 
+      ? err.message 
+      : 'Internal Server Error',
   });
 });
 
@@ -57,8 +67,8 @@ const startServer = async () => {
   try {
     await connectDB();
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`🌐 Frontend: http://localhost:5173`);
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌐 Frontend allowed: https://travel-app-chi-eosin.vercel.app`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
