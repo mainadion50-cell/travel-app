@@ -11,19 +11,16 @@ const app = express();
 // ====================== MIDDLEWARE ======================
 app.use(helmet());
 
-// Updated CORS - allows both Vercel frontend and local development
+// Updated CORS configuration
 app.use(cors({
   origin: [
-    'https://travel-app-chi-eosin.vercel.app',   // Your current Vercel URL
+    'https://travel-app-chi-eosin.vercel.app',   // Your Vercel frontend
     'http://localhost:5173'                      // Local development
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-
-// Handle preflight OPTIONS requests explicitly
-app.options('*', cors());
 
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
@@ -68,7 +65,7 @@ const startServer = async () => {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌐 Frontend allowed: https://travel-app-chi-eosin.vercel.app`);
+      console.log(`🌐 Allowed frontend: https://travel-app-chi-eosin.vercel.app`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
